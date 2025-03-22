@@ -31,7 +31,7 @@ public class UserService(UserContext userContext,
         
         var performUser = authenticatedUserProvider.User;
 
-        if (performUser.IsHavePermission(selectedUser.Auth0Id))
+        if (!performUser.IsHavePermission(selectedUser.Auth0Id))
         {
             logger.LogInformation("User with Auth0Id {Auth0Id} try to get information of userId {Id}", performUser.Id, id);
             return new UserBrokenAccessException("You don't have permission to access");   
@@ -84,6 +84,7 @@ public class UserService(UserContext userContext,
 
         if (!performUser.IsHavePermission(selectedUser.Auth0Id))
         {
+            logger.LogInformation("Cannot update user with Id {Id} due to lacking off permission", id);
             return new UserBrokenAccessException("You don't have permission to perform update user");
         }
 

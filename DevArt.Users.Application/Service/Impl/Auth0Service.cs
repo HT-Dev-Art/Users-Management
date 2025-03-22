@@ -90,19 +90,19 @@ public class Auth0Service(IOptions<Auth0Config> auth0ConfigSnapshot) : IAuth0Ser
         };
         var client = new RestClient( clientOption);
         var request = new RestRequest($"users\\{auth0Id}", Method.Patch);
-
+        
         var bodyDictionary = new Dictionary<string, string?>
             { { "password", updateUserDto.NewPassword }, {"nickname", updateUserDto.NickName} };
-        foreach (var key in bodyDictionary.Keys)
+        
+        foreach (var key in bodyDictionary.Keys.Where(key => bodyDictionary[key] == null))
         {
-            if (bodyDictionary[key] != null)
-            {
-                request.AddParameter(key, bodyDictionary[key]!, ParameterType.RequestBody);
-            }
+            bodyDictionary.Remove(key);
         }
+        
+        request.AddJsonBody(bodyDictionary);
 
-        var result = await client.PostAsync<Auth0ResponseDto>(request);
-        return result ?? new Auth0ResponseDto();
+        var result = await client.ExecutePatchAsync<Auth0ResponseDto>(request);
+        return result.Data ?? new Auth0ResponseDto();
     }
 
     public async Task<RestResponse> UpdateUserRole(string roleId, List<string> auth0Ids) 

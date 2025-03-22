@@ -30,6 +30,7 @@ public class UsersController(IUserService userService) : BaseController
             exception => BadRequest(exception.Message));
     }
     
+    [Authorize(Policy = Permissions.WriteCurrentUser)]
     [HttpPatch("{id:int}")]
     public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto updateUserDto, int id)
     {

@@ -12,6 +12,7 @@ public class UpdateUserValidation : AbstractValidator<UpdateUserDto>
             .WithMessage("The max length of nickname is 100. Your nick name has been exceeded.");
 
         RuleFor(user => user.NewPassword).Equal(user => user.PasswordConfirmation)
+            .When(user => user.NewPassword is not null)
             .WithMessage("Your confirmation password have to match with your password");
     }
 }
