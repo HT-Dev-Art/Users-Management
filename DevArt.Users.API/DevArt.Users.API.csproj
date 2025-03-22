@@ -18,7 +18,14 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore" VersionOverride="9.0.3" />
+        <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="9.0.3">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.3" />
+        <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.6.1" />
+        <PackageReference Include="Scalar.AspNetCore" Version="2.1.0" />
+        <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Mvc" Version="1.5.0" />
     </ItemGroup>
 
     <ItemGroup>

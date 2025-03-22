@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using ScopesStaticClass = DevArt.BuildingBlock.Scopes;
+using PermissionsStatic = DevArt.BuildingBlock.Permissions;
 
 namespace DevArt.BuildingBlock.Authorization;
 
@@ -9,28 +9,21 @@ public record AuthenticatedUser
     public AuthenticatedUser(HttpContext context, string authority)
     {
         Id = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-        Scopes = context.User
-                     .FindFirst(c => c.Type == ScopesStaticClass.ClaimType && c.Issuer == authority)
-                     ?.Value
-                     .Split(' ')
-                     .Aggregate(
-                         ScopesFlags.None,
-                         (scopesEnum, scope) =>
-                         {
-                             if (!ScopesStaticClass.ScopesDictionary.TryGetValue(scope, out var scopeEnum))
-                             {
-                                 return scopesEnum;
-                             }
-
-                             scopesEnum |= scopeEnum;
-
-                             return scopesEnum;
-                         })
-                 ?? ScopesFlags.None;
-        IsValid = !string.IsNullOrWhiteSpace(Id) && Scopes != ScopesFlags.None;
+        Permissions = context.User.FindAll(c => c.Type == PermissionsStatic.ClaimType
+                                                && c.Issuer == authority)
+            .Aggregate(PermissionsFlags.None, (permissionsEnums, claim) =>
+            {
+                if (!PermissionsStatic.PermissionssDictionary.TryGetValue(claim.Value, out var permissionEnum))
+                {
+                    return permissionsEnums;
+                }
+                permissionsEnums |= permissionEnum;
+                return permissionsEnums;
+            });
+        IsValid = !string.IsNullOrWhiteSpace(Id) && Permissions != PermissionsFlags.None;
     }
 
-    public ScopesFlags Scopes { get; }
+    public PermissionsFlags Permissions { get; }
 
     public string Id { get; }
 

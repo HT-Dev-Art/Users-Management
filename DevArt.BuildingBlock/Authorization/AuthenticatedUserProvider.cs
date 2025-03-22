@@ -1,18 +1,17 @@
 using DevArt.BuildingBlock.Exceptions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 
 namespace DevArt.BuildingBlock.Authorization;
 
 public class AuthenticatedUserProvider : IAuthenticatedUserProvider
 {
-    public AuthenticatedUserProvider(IHttpContextAccessor httpContextAccessor, IOptions<JwtBearerOptions> jwtOptions)
+    public AuthenticatedUserProvider(IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
     {
         var context = httpContextAccessor.HttpContext
                       ?? throw new HttpContextNotFoundException("HttpContext not found.");
 
-        User = new AuthenticatedUser(context, jwtOptions.Value.Authority ?? string.Empty);
+        User = new AuthenticatedUser(context, configuration["JwtSetting:Authority"] ?? string.Empty);
     }
     
     public AuthenticatedUser User { get; }

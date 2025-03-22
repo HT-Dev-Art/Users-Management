@@ -5,5 +5,6 @@ public enum ErrorCodes
 {
     UserNotFoundException = 0b_1,
     UserBrokenAccessException = 0b_10,
-    UserEmailExistingException = 0b_100
+    UserEmailExistingException = 0b_100,
+    CannotCreatedUserException = 0b_1000
 }

@@ -1,4 +1,5 @@
 using DevArt.Users.API.Extensions;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +21,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    
+        app.MapOpenApi("OpenApi/v1.json");
+        app.MapScalarApiReference();
 }
 
 app.MapControllers();

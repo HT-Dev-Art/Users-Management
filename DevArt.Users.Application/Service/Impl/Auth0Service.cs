@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using DevArt.Users.Application.Configuration;
 using DevArt.Users.Application.Dto;
 using DevArt.Users.Application.Dto.Auth0;
@@ -8,9 +7,10 @@ using RestSharp.Authenticators;
 
 namespace DevArt.Users.Application.Service.Impl;
 
-public class Auth0Service(IOptionsSnapshot<Auth0Config> auth0ConfigSnapshot) : IAuth0Service
+public class Auth0Service(IOptions<Auth0Config> auth0ConfigSnapshot) : IAuth0Service
 {
     private string _auth0Token = string.Empty;
+    private DateTimeOffset? _tokenExpireTime;
     private readonly Auth0Config _auth0Config = auth0ConfigSnapshot.Value;
     
     private async Task<string> GetAut0Token()
@@ -18,15 +18,15 @@ public class Auth0Service(IOptionsSnapshot<Auth0Config> auth0ConfigSnapshot) : I
         if (_auth0Token == string.Empty)
         {
             _auth0Token = await RefreshAuth0Token();
+            _tokenExpireTime = DateTimeOffset.UtcNow.AddDays(1);
         }
         
         else
         {
-            var jwt = new JwtSecurityTokenHandler();
-            var token = jwt.ReadToken(_auth0Token);
-            if (token.ValidFrom < DateTime.Now)
+            if (_tokenExpireTime < DateTimeOffset.UtcNow)
             {
                 _auth0Token = await RefreshAuth0Token();
+                _tokenExpireTime = DateTimeOffset.UtcNow.AddDays(1);
             }
         }
 
@@ -36,15 +36,20 @@ public class Auth0Service(IOptionsSnapshot<Auth0Config> auth0ConfigSnapshot) : I
     private async Task<string> RefreshAuth0Token()
     {
         var client = new RestClient(_auth0Config.OAuthTokenUrl);
-        var request = new RestRequest("",Method.Post);
-        
+
+        var body = new Dictionary<string, string>
+        {
+            { "audience", _auth0Config.ManagementEndPoint },
+            { "client_id", _auth0Config.ClientId },
+            { "client_secret", _auth0Config.ClientSecret },
+            { "grant_type", _auth0Config.GrantType }
+        };
+        var request = new RestRequest();
         request.AddHeader("content-type", "application/json");
-        request.AddParameter("audience", _auth0Config.Audience, ParameterType.RequestBody);
-        request.AddParameter("client_id", _auth0Config.ClientId, ParameterType.RequestBody);
-        request.AddParameter("client_secret", _auth0Config.ClientSecret, ParameterType.RequestBody);
-        request.AddParameter("grant_type", _auth0Config.GrantType, ParameterType.RequestBody);
-        var result = await client.PostAsync<Auth0CredentialDto>(request);
-        return result?.AccessToken ?? "";
+        request.AddJsonBody(body);
+        var result = await client.ExecutePostAsync<Auth0CredentialDto>(request);
+            
+        return  result.Data?.AccessToken ?? "";
     }
 
 
@@ -58,16 +63,21 @@ public class Auth0Service(IOptionsSnapshot<Auth0Config> auth0ConfigSnapshot) : I
         };
         var client = new RestClient( clientOption);
         var request = new RestRequest("users", Method.Post);
-        request.AddParameter("connection", Constants.Auth0Constant.Connection, ParameterType.RequestBody);
-        request.AddParameter("email", userDto.Email, ParameterType.RequestBody);
-        request.AddParameter("password", userDto.Password, ParameterType.RequestBody);
+        var body = new Dictionary<string, string>
+        {
+            { "connection", Constants.Auth0Constant.Connection },
+            { "email", userDto.Email },
+            { "password", userDto.Password }
+        };
         if (userDto.NickName != null)
         {
-            request.AddParameter("password", ParameterType.RequestBody);
+            body["nickname"] = userDto.NickName;
         }
 
-        var result = await client.PostAsync<Auth0ResponseDto>(request);
-        return result ?? new Auth0ResponseDto();
+        request.AddJsonBody(body);
+        
+        var result = await client.ExecutePostAsync<Auth0ResponseDto>(request);
+        return result.Data ?? new Auth0ResponseDto();
     }
 
     public async Task<Auth0ResponseDto> UpdateUser(UpdateUserDto updateUserDto, string auth0Id)
@@ -93,5 +103,35 @@ public class Auth0Service(IOptionsSnapshot<Auth0Config> auth0ConfigSnapshot) : I
 
         var result = await client.PostAsync<Auth0ResponseDto>(request);
         return result ?? new Auth0ResponseDto();
+    }
+
+    public async Task<RestResponse> UpdateUserRole(string roleId, List<string> auth0Ids) 
+    {
+        var credential = await GetAut0Token();
+        var clientOption = new RestClientOptions()
+        {
+            Authenticator = new JwtAuthenticator(credential),
+            BaseUrl = new Uri(_auth0Config.ManagementEndPoint)
+        };
+        var client = new RestClient( clientOption);
+        var request = new RestRequest($"roles\\{roleId}\\users", Method.Post);
+        var body = new Dictionary<string, List<string>> { { "users", auth0Ids } };
+        request.AddJsonBody(body);
+        var response = await client.ExecutePostAsync(request: request);
+        return response;
+    }
+
+    public async Task<RestResponse> DeleteUser(string auth0Id)
+    {
+        var credential = await GetAut0Token();
+        var clientOption = new RestClientOptions()
+        {
+            Authenticator = new JwtAuthenticator(credential),
+            BaseUrl = new Uri(_auth0Config.ManagementEndPoint)
+        };
+        var client = new RestClient(clientOption);
+        var request = new RestRequest($"users\\{auth0Id}", Method.Delete);
+        var response = await client.ExecutePostAsync(request: request);
+        return response;
     }
 }
