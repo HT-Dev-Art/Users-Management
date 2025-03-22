@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>DevArt.Users.Application</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.1" />
+      <PackageReference Include="RestSharp" Version="112.1.0" />
+      <PackageReference Include="Riok.Mapperly" Version="4.1.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DevArt.BuildingBlock\DevArt.BuildingBlock.csproj" />
+      <ProjectReference Include="..\DevArt.Users.Infrastructure\DevArt.Users.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>
