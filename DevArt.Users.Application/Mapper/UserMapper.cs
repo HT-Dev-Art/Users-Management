@@ -8,13 +8,5 @@ namespace DevArt.Users.Application.Mapper;
 [Mapper]
 public static partial  class UserMapper
 {
-    public static partial UserDto ToUserDto(User user);
-
-    [MapProperty(nameof(Auth0ResponseDto.Nickname), nameof(User.UserName))]
-    [MapProperty(nameof(Auth0ResponseDto.UserId), nameof(User.Auth0Id))]
-    public static partial User ToUser(Auth0ResponseDto auth0ResponseDto);
-
-
-    [MapProperty(nameof(Auth0ResponseDto.Nickname), nameof(User.UserName))]
-    public static partial void UpdateUser([MappingTarget] this User user, Auth0ResponseDto auth0ResponseDto);
+    public static partial UserDto ToUserDto(User? user);
 }

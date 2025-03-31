@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DevArt.Users.Infrastructure.Migrations
 {
     [DbContext(typeof(UserContext))]
-    [Migration("20250319074613_UserContext-v1.0")]
+    [Migration("20250331041006_UserContext-v1.0")]
     partial class UserContextv10
     {
         /// <inheritdoc />
@@ -40,17 +40,8 @@ namespace DevArt.Users.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 

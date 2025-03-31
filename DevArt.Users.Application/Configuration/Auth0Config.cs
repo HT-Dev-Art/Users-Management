@@ -11,7 +11,4 @@ public class Auth0Config
     public string OAuthTokenUrl { get; set; } = string.Empty;
 
     public string ManagementEndPoint { get; set; } = string.Empty;
-    
-    public Dictionary<string, string> Roles { get; set; } = new();
-    
 }

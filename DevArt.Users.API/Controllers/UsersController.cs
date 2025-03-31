@@ -1,5 +1,5 @@
-using System.ComponentModel;
-using DevArt.BuildingBlock;
+using DevArt.API.Authorization;
+using DevArt.API.Controllers;
 using DevArt.Users.Application.Dto;
 using DevArt.Users.Application.Service;
 using Microsoft.AspNetCore.Authorization;
@@ -7,37 +7,29 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DevArt.Users.API.Controllers;
 
-public class UsersController(IUserService userService) : BaseController
+public class UsersController(IUserService userService) : SecuredController
 {
-    [Authorize(Policy = Permissions.ReadCurrentUser)]
-    [HttpGet("{id:int}")]
-    public IActionResult GetUserById(int id)
-    {
-        var userResult = userService.GetUserById(id);
-        return userResult.ConvertTo<IActionResult>(Ok, 
-            exception => BadRequest(exception.Message));
-    }
     
-    [AllowAnonymous]
-    [EndpointSummary("Create a user")]
-    [Description("It allow to create user")]
-    [HttpPost]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
+    [Authorize(Policy = Scopes.WriteCurrentUser)]
+    [HttpPatch("current-user")]
+    public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto updateUserDto)
     {
-        var userResult = await userService.CreateUser(createUserDto);
+        var userResult = await userService.UpdateUser(updateUserDto);
 
-        return userResult.ConvertTo<IActionResult>(success => Created("",success), 
-            exception => BadRequest(exception.Message));
+        return userResult.ConvertTo<IActionResult>(_ => NoContent(),
+            exception => BadRequest(new ProblemDetails(
+                )
+            {
+                Detail = exception.Message
+            }));
     }
     
-    [Authorize(Policy = Permissions.WriteCurrentUser)]
-    [HttpPatch("{id:int}")]
-    public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto updateUserDto, int id)
-    {
-        var userResult = await userService.UpdateUser(updateUserDto, id);
 
-        return userResult.ConvertTo<IActionResult>(Ok,
-            exception => BadRequest(exception.Message));
+    [Authorize]
+    [HttpGet("current-user")]
+    public async Task<IActionResult> GetOrMappingUser()
+    {
+        var result = await userService.GetOrCreateMappingUser();
+        return Ok(result);
     }
-    
 }

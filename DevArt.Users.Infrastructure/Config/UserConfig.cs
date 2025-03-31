@@ -11,9 +11,5 @@ public class UserConfig : IEntityTypeConfiguration<User>
         builder.HasKey(user => user.Id);
         builder.Property(user => user.Id)
             .UseIdentityColumn();
-        builder.Property(user => user.UserName)
-            .HasMaxLength(100);
-        builder.Property(user => user.Email)
-            .HasMaxLength(100);
     }
 }

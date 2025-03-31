@@ -29,14 +29,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DevArt.BuildingBlock\DevArt.BuildingBlock.csproj" />
+      <ProjectReference Include="..\DevArt.User.Core\DevArt.Users.Core.csproj" />
       <ProjectReference Include="..\DevArt.Users.Application\DevArt.Users.Application.csproj" />
       <ProjectReference Include="..\DevArt.Users.Infrastructure\DevArt.Users.Infrastructure.csproj" />
     </ItemGroup>
-
-<!--    <ItemGroup>
-      <ProjectReference Include="..\DevArt.Users.Application\DevArt.Users.Application.csproj" />
-      <ProjectReference Include="..\DevArt.Users.Infrastructure\DevArt.Users.Infrastructure.csproj" />
-    </ItemGroup>-->
 
 </Project>
