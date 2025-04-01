@@ -55,7 +55,7 @@ public class Auth0Service(
 
         var body = new Dictionary<string, string>
         {
-            { "audience", $"{_auth0Config.Auth0Domain}api/v2/" },
+            { "audience", $"{_auth0Config.Auth0Domain}{ApplicationConstants.Auth0ManagementRoute}" },
             { "client_id", _auth0Config.ClientId },
             { "client_secret", _auth0Config.ClientSecret },
             { "grant_type", _auth0Config.GrantType }
