@@ -9,7 +9,6 @@ namespace DevArt.Users.API.Controllers;
 
 public class UsersController(IUserService userService) : SecuredController
 {
-    
     [Authorize(Policy = Scopes.WriteCurrentUser)]
     [HttpPatch("current-user")]
     public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto updateUserDto)
@@ -17,13 +16,12 @@ public class UsersController(IUserService userService) : SecuredController
         var userResult = await userService.UpdateUser(updateUserDto);
 
         return userResult.ConvertTo<IActionResult>(_ => NoContent(),
-            exception => BadRequest(new ProblemDetails(
-                )
+            exception => BadRequest(new ProblemDetails
             {
                 Detail = exception.Message
             }));
     }
-    
+
 
     [Authorize]
     [HttpGet("current-user")]

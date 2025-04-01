@@ -18,7 +18,6 @@ public class UserService(
     IMemoryCache memoryCache,
     ILogger<UserService> logger) : IUserService
 {
-    
     public async Task<Result<bool>> UpdateUser(UpdateUserDto updateUserDto)
     {
         var currentAuth0Id = authenticatedUserProvider.User.Id;
@@ -30,10 +29,10 @@ public class UserService(
             logger.LogError("Cannot find requested user with auth0Id {Auth0Id}", currentAuth0Id);
             return new UserNotFoundException("Cannot found requested user");
         }
-        
+
         var response = await auth0Service.UpdateUser(updateUserDto, selectedUser.Auth0Id);
 
-        if (response is { IsSuccess: false, Exception: not null }) return response.Exception;   
+        if (response is { IsSuccess: false, Exception: not null }) return response.Exception;
 
         return response.IsSuccess;
     }
@@ -51,7 +50,7 @@ public class UserService(
             .Select(user => user.Id)
             .FirstOrDefaultAsync();
 
-        
+
         if (selectedId == notFound)
         {
             selectedUser = new User()
@@ -65,11 +64,9 @@ public class UserService(
         {
             selectedUser = await userContext.Users.FindAsync(selectedId);
         }
+        
+        var userDto = UserMapper.ToUserDto(selectedUser);
 
-        
-        
-        var userDto = UserMapper.ToUserDto(user: selectedUser);
-        
         return userDto;
     }
 }
