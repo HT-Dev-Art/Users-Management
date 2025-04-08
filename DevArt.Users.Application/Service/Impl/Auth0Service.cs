@@ -19,8 +19,7 @@ public class Auth0Service(
 {
     private readonly Auth0Config _auth0Config = auth0ConfigSnapshot.Value;
     private readonly string _auth0TokenKey = "token";
-
-
+    
     public async Task<Result<Auth0ResponseDto>> UpdateUser(UpdateUserDto updateUserDto, string auth0Id)
     {
         var bodyDictionary = new Dictionary<string, string>
@@ -32,27 +31,14 @@ public class Auth0Service(
         foreach (var key in bodyDictionary.Keys.Where(key =>
                      bodyDictionary[key] == string.Empty)) bodyDictionary.Remove(key);
 
-        var jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
-        var client = httpClientFactory.CreateClient(ApplicationConstants.Auth0ClientName);
-        var token = await GetToken();
-        client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue(ApplicationConstants.AuthenticationSchema, token);
-        var response = await client.PatchAsJsonAsync($"{ApplicationConstants.Auth0ManagementRoute}/users/{auth0Id}", bodyDictionary);
-        if (!response.IsSuccessStatusCode)
-            return new FailedUpdateUserException("Cannot update your account. Please try again!");
-        var contentStream = await response.Content.ReadAsStreamAsync();
-        var result = await JsonSerializer.DeserializeAsync<Auth0ResponseDto>(contentStream, jsonOptions);
-        return result ?? new Auth0ResponseDto();
+        var response = await HandlePatchRequest<Auth0ResponseDto>(
+            $"{ApplicationConstants.Auth0ManagementRoute}users/{auth0Id}",
+            bodyDictionary);
+        return response;
     }
 
-
-    private async Task<string> RefreshToken()   
+    private async Task<string> RefreshToken()
     {
-        var client = httpClientFactory.CreateClient(ApplicationConstants.Auth0ClientName);
-
         var body = new Dictionary<string, string>
         {
             { "audience", $"{_auth0Config.Auth0Domain}{ApplicationConstants.Auth0ManagementRoute}" },
@@ -60,22 +46,75 @@ public class Auth0Service(
             { "client_secret", _auth0Config.ClientSecret },
             { "grant_type", _auth0Config.GrantType }
         };
-        var jsonOption = new JsonSerializerOptions()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
-        var response = await client.PostAsJsonAsync("oauth/token", body);
-        var contentStream = await response.Content.ReadAsStreamAsync();
-        var auth0Credential = JsonSerializer.DeserializeAsync<Auth0CredentialDto>(contentStream, jsonOption);
-        return auth0Credential.Result?.AccessToken ?? "";
+        var result = await HandlePostRequest<Auth0CredentialDto>(ApplicationConstants.Auth0OAuthRoute, 
+            body, false);
+
+        return result.Value?.AccessToken ?? "";
     }
 
     private async Task<string> GetToken()
     {
         memoryCache.TryGetValue(_auth0TokenKey, out string? token);
-        if (token is not null) return token;
+        if (token is not null &&  token != string.Empty) return token;
         token = await RefreshToken();
-        memoryCache.Set(_auth0TokenKey, token, TimeSpan.FromDays(ApplicationConstants.ExpirationDate));
+        memoryCache.Set(_auth0TokenKey, token,
+            TimeSpan.FromDays(ApplicationConstants.ExpirationDate));
         return token;
+    }
+
+    private async Task<Result<TResponse>> HandlePostRequest<TResponse>(string route,
+        Object body, bool attachAuthorizationHeader)
+    {
+        var httpRequestOption = new HttpRequestMessageOptionDto()
+        {
+            Route = route,
+            Body = body,
+            Method = HttpMethod.Post,
+            AttachAuthorizationHeader = attachAuthorizationHeader
+        };
+        var responseDeserialization = await HandleResponse<TResponse>(httpRequestOption);
+        return responseDeserialization;
+    }
+
+    private async Task<Result<TResponse>> HandlePatchRequest<TResponse>(string route,
+        Object body)
+    {
+        var httpRequestOption = new HttpRequestMessageOptionDto()
+        {
+            Route = route,
+            Body = body,
+            Method = HttpMethod.Patch,
+            AttachAuthorizationHeader = true
+        };
+        var responseDeserialization = await HandleResponse<TResponse>(httpRequestOption);
+        return responseDeserialization;
+    }
+
+    private async Task<Result<TResponse>> HandleResponse<TResponse>(
+        HttpRequestMessageOptionDto httpRequestMessageOptionDto)
+    {
+        var client = httpClientFactory.CreateClient(ApplicationConstants.Auth0ClientName);
+        var jsonOption = new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        };
+        var httpRequestMessage = new HttpRequestMessage()
+        {
+            Content = JsonContent.Create(httpRequestMessageOptionDto.Body),
+            Method = httpRequestMessageOptionDto.Method,
+            RequestUri = new Uri(client.BaseAddress ?? new Uri(_auth0Config.Auth0Domain), httpRequestMessageOptionDto.Route)
+        };
+        if (httpRequestMessageOptionDto.AttachAuthorizationHeader)
+        {
+            var token = await GetToken();
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(ApplicationConstants.AuthenticationSchema,token);
+        }
+
+        var responseMessage = await client.SendAsync(httpRequestMessage);
+        if (!responseMessage.IsSuccessStatusCode) return new BadHttpClientException("Failed to interact resource");
+        var contentStream = await responseMessage.Content.ReadAsStreamAsync();
+        var deserializeContent = await JsonSerializer.DeserializeAsync<TResponse>(contentStream, jsonOption);
+        if (deserializeContent is null) return new JsonException("Failed deserialization content");
+        return deserializeContent;
     }
 }

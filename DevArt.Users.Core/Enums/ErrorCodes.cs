@@ -4,5 +4,5 @@ namespace DevArt.Users.Core.Enums;
 public enum ErrorCodes
 {
     UserNotFoundException = 0b_1,
-    FailedUpdateUserException = 0b_10,
+    BadHttpClientException = 0b_10,
 }

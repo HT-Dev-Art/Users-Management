@@ -28,7 +28,6 @@ public class UserContext(DbContextOptions<UserContext> options) : DbContext(opti
 
             if (entry.State == EntityState.Modified)
             {
-
                 entry.Property("UpdatedAt").CurrentValue = currentTime;
             }
         }

@@ -4,5 +4,4 @@ namespace DevArt.Users.Application.Exceptions;
 
 public class UserDefinedException(ErrorCodes errorCode, string message) : Exception(message)
 {
-    
 }

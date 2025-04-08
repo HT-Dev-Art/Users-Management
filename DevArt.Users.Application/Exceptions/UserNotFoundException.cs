@@ -4,5 +4,4 @@ namespace DevArt.Users.Application.Exceptions;
 
 public class UserNotFoundException(string message) : UserDefinedException(ErrorCodes.UserNotFoundException, message)
 {
-    
 }

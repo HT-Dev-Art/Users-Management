@@ -8,5 +8,7 @@ public static class ApplicationConstants
 
     public static readonly int ExpirationDate = 1;
 
-    public static readonly string Auth0ManagementRoute = "api/v2";
+    public static readonly string Auth0ManagementRoute = "api/v2/";
+
+    public static readonly string Auth0OAuthRoute = "oauth/token";
 }
