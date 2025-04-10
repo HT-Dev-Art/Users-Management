@@ -19,7 +19,7 @@ public class Auth0Service(
 {
     private readonly Auth0Config _auth0Config = auth0ConfigSnapshot.Value;
     private readonly string _auth0TokenKey = "token";
-    
+
     public async Task<Result<Auth0ResponseDto>> UpdateUser(UpdateUserDto updateUserDto, string auth0Id)
     {
         var bodyDictionary = new Dictionary<string, string>
@@ -31,7 +31,7 @@ public class Auth0Service(
         foreach (var key in bodyDictionary.Keys.Where(key =>
                      bodyDictionary[key] == string.Empty)) bodyDictionary.Remove(key);
 
-        var response = await HandlePatchRequest<Auth0ResponseDto>(
+        var response = await HandlePatchRequest<Dictionary<string, string>, Auth0ResponseDto>(
             $"{ApplicationConstants.Auth0ManagementRoute}users/{auth0Id}",
             bodyDictionary);
         return response;
@@ -46,7 +46,8 @@ public class Auth0Service(
             { "client_secret", _auth0Config.ClientSecret },
             { "grant_type", _auth0Config.GrantType }
         };
-        var result = await HandlePostRequest<Auth0CredentialDto>(ApplicationConstants.Auth0OAuthRoute, 
+        var result = await HandlePostRequest<Dictionary<string, string>, Auth0CredentialDto>(
+            ApplicationConstants.Auth0OAuthRoute,
             body, false);
 
         return result.Value?.AccessToken ?? "";
@@ -55,59 +56,61 @@ public class Auth0Service(
     private async Task<string> GetToken()
     {
         memoryCache.TryGetValue(_auth0TokenKey, out string? token);
-        if (token is not null &&  token != string.Empty) return token;
+        if (token is not null && token != string.Empty) return token;
         token = await RefreshToken();
         memoryCache.Set(_auth0TokenKey, token,
             TimeSpan.FromDays(ApplicationConstants.ExpirationDate));
         return token;
     }
 
-    private async Task<Result<TResponse>> HandlePostRequest<TResponse>(string route,
-        Object body, bool attachAuthorizationHeader)
+    private async Task<Result<TResponse>> HandlePostRequest<TBody, TResponse>(string route,
+        TBody body, bool attachAuthorizationHeader)
     {
-        var httpRequestOption = new HttpRequestMessageOptionDto()
+        var httpRequestOption = new HttpRequestMessageOptionDto<TBody>
         {
             Route = route,
             Body = body,
             Method = HttpMethod.Post,
             AttachAuthorizationHeader = attachAuthorizationHeader
         };
-        var responseDeserialization = await HandleResponse<TResponse>(httpRequestOption);
+        var responseDeserialization = await HandleResponse<TBody, TResponse>(httpRequestOption);
         return responseDeserialization;
     }
 
-    private async Task<Result<TResponse>> HandlePatchRequest<TResponse>(string route,
-        Object body)
+    private async Task<Result<TResponse>> HandlePatchRequest<TBody, TResponse>(string route,
+        TBody body)
     {
-        var httpRequestOption = new HttpRequestMessageOptionDto()
+        var httpRequestOption = new HttpRequestMessageOptionDto<TBody>
         {
             Route = route,
             Body = body,
             Method = HttpMethod.Patch,
             AttachAuthorizationHeader = true
         };
-        var responseDeserialization = await HandleResponse<TResponse>(httpRequestOption);
+        var responseDeserialization = await HandleResponse<TBody, TResponse>(httpRequestOption);
         return responseDeserialization;
     }
 
-    private async Task<Result<TResponse>> HandleResponse<TResponse>(
-        HttpRequestMessageOptionDto httpRequestMessageOptionDto)
+    private async Task<Result<TResponse>> HandleResponse<TBody, TResponse>(
+        HttpRequestMessageOptionDto<TBody> httpRequestMessageOptionDto)
     {
         var client = httpClientFactory.CreateClient(ApplicationConstants.Auth0ClientName);
         var jsonOption = new JsonSerializerOptions()
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         };
-        var httpRequestMessage = new HttpRequestMessage()
+        var httpRequestMessage = new HttpRequestMessage
         {
             Content = JsonContent.Create(httpRequestMessageOptionDto.Body),
             Method = httpRequestMessageOptionDto.Method,
-            RequestUri = new Uri(client.BaseAddress ?? new Uri(_auth0Config.Auth0Domain), httpRequestMessageOptionDto.Route)
+            RequestUri = new Uri(client.BaseAddress ?? new Uri(_auth0Config.Auth0Domain),
+                httpRequestMessageOptionDto.Route)
         };
         if (httpRequestMessageOptionDto.AttachAuthorizationHeader)
         {
             var token = await GetToken();
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(ApplicationConstants.AuthenticationSchema,token);
+            httpRequestMessage.Headers.Authorization =
+                new AuthenticationHeaderValue(ApplicationConstants.AuthenticationSchema, token);
         }
 
         var responseMessage = await client.SendAsync(httpRequestMessage);
