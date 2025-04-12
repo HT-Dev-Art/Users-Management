@@ -32,9 +32,7 @@ public class UserService(
 
         var response = await auth0Service.UpdateUser(updateUserDto, selectedUser.Auth0Id);
 
-        if (response is { IsSuccess: false, Exception: not null }) return response.Exception;
-
-        return response.IsSuccess;
+        return response.ConvertTo<Result<bool>>(_ => true, (exception) =>  exception);
     }
 
     public async Task<UserDto> GetOrCreateMappingUser()

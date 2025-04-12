@@ -22,18 +22,27 @@ public class Auth0Service(
 
     public async Task<Result<Auth0ResponseDto>> UpdateUser(UpdateUserDto updateUserDto, string auth0Id)
     {
-        var bodyDictionary = new Dictionary<string, string>
+        var bodyDictionary = new Dictionary<string, string?>
         {
-            { "password", updateUserDto.NewPassword ?? "" },
-            { "nickname", updateUserDto.NickName ?? "" }
+            { "nickname", updateUserDto.NickName }
         };
 
         foreach (var key in bodyDictionary.Keys.Where(key =>
-                     bodyDictionary[key] == string.Empty)) bodyDictionary.Remove(key);
+                     bodyDictionary[key] is null ||
+                     bodyDictionary[key] == string.Empty))
+        {
+            bodyDictionary.Remove(key);
+        }
+        
 
-        var response = await HandlePatchRequest<Dictionary<string, string>, Auth0ResponseDto>(
-            $"{ApplicationConstants.Auth0ManagementRoute}users/{auth0Id}",
-            bodyDictionary);
+        var httpRequestOption = new HttpRequestMessageOptionDto<Dictionary<string, string?>>()
+        {
+            Route = $"{ApplicationConstants.Auth0ManagementRoute}users/{auth0Id}",
+            Body = bodyDictionary,
+            AttachAuthorizationHeader = true,
+            Method = HttpMethod.Patch
+        };
+        var response = await HandleResponse<Dictionary<string, string?>, Auth0ResponseDto>(httpRequestOption);
         return response;
     }
 
@@ -46,9 +55,17 @@ public class Auth0Service(
             { "client_secret", _auth0Config.ClientSecret },
             { "grant_type", _auth0Config.GrantType }
         };
-        var result = await HandlePostRequest<Dictionary<string, string>, Auth0CredentialDto>(
-            ApplicationConstants.Auth0OAuthRoute,
-            body, false);
+
+        var httpRequestOption = new HttpRequestMessageOptionDto<Dictionary<string, string>>()
+        {
+            Route = ApplicationConstants.Auth0OAuthRoute,
+            Body = body,
+            AttachAuthorizationHeader = false,
+            Method = HttpMethod.Post
+        };
+
+        var result = await HandleResponse<Dictionary<string, string>, Auth0CredentialDto>(
+            httpRequestOption);
 
         return result.Value?.AccessToken ?? "";
     }
@@ -61,34 +78,6 @@ public class Auth0Service(
         memoryCache.Set(_auth0TokenKey, token,
             TimeSpan.FromDays(ApplicationConstants.ExpirationDate));
         return token;
-    }
-
-    private async Task<Result<TResponse>> HandlePostRequest<TBody, TResponse>(string route,
-        TBody body, bool attachAuthorizationHeader)
-    {
-        var httpRequestOption = new HttpRequestMessageOptionDto<TBody>
-        {
-            Route = route,
-            Body = body,
-            Method = HttpMethod.Post,
-            AttachAuthorizationHeader = attachAuthorizationHeader
-        };
-        var responseDeserialization = await HandleResponse<TBody, TResponse>(httpRequestOption);
-        return responseDeserialization;
-    }
-
-    private async Task<Result<TResponse>> HandlePatchRequest<TBody, TResponse>(string route,
-        TBody body)
-    {
-        var httpRequestOption = new HttpRequestMessageOptionDto<TBody>
-        {
-            Route = route,
-            Body = body,
-            Method = HttpMethod.Patch,
-            AttachAuthorizationHeader = true
-        };
-        var responseDeserialization = await HandleResponse<TBody, TResponse>(httpRequestOption);
-        return responseDeserialization;
     }
 
     private async Task<Result<TResponse>> HandleResponse<TBody, TResponse>(

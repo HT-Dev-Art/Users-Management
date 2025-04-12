@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using DevArt.Users.Application.Configuration;
 using DevArt.Users.Application.Constants;
 using Microsoft.Extensions.Options;

@@ -4,7 +4,6 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <RootNamespace>DevArt.Users.API</RootNamespace>
       <UserSecretsId>156c9b24-50b3-4efa-bbab-105452bf7b07</UserSecretsId>
   </PropertyGroup>
 
