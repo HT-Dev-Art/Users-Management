@@ -10,17 +10,12 @@
       <PackageReference Include="DevArt.API" Version="1.0.0" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.3" />
       <PackageReference Include="Riok.Mapperly" Version="4.1.1" />
+        <PackageReference Include="DevArt.Core" Version="1.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\DevArt.Users.Core\DevArt.Users.Core.csproj" />
       <ProjectReference Include="..\DevArt.Users.Infrastructure\DevArt.Users.Infrastructure.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="DevArt.Core">
-        <HintPath>C:\Users\TriNgo\.nuget\packages\devart.core\1.0.0\lib\net9.0\DevArt.Core.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
+    
 </Project>
